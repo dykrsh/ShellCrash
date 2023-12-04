@@ -324,7 +324,8 @@ EOF
 		}		
 }
 	#域名嗅探配置
-	[ "$sniffer" = "已启用" ] && [ "$clashcore" = "clash.meta" ] && sniffer_set="sniffer: {enable: true, skip-domain: [Mijia Cloud], sniff: {tls: {ports: [443, 8443]}, http: {ports: [80, 8080-8880]}}}"
+	#启用quic流量嗅探
+	[ "$sniffer" = "已启用" ] && [ "$clashcore" = "clash.meta" ] && sniffer_set="sniffer: {enable: true, skip-domain: [Mijia Cloud], sniff: {tls: {ports: [443, 8443]}, http: {ports: [80, 8080-8880]}, quic: {ports: [443, 8443]}}}"
 	[ "$clashcore" = "clashpre" ] && [ "$dns_mod" = "redir_host" ] && exper="experimental: {ignore-resolve-fail: true, interface-name: en0, sniff-tls-sni: true}"
 	#生成set.yaml
 	cat > $TMPDIR/set.yaml <<EOF
@@ -366,7 +367,8 @@ EOF
 		done < $sys_hosts
 	fi	
 	#分割配置文件
-	yaml_char='proxies proxy-groups proxy-providers rules rule-providers'
+	#使用自定义的dns配置
+	yaml_char='proxies proxy-groups proxy-providers rules rule-providers dns'
 	for char in $yaml_char;do
 		sed -n "/^$char:/,/^[a-z]/ { /^[a-z]/d; p; }" $yaml > $TMPDIR/${char}.yaml
 	done
@@ -461,7 +463,8 @@ EOF
 		}
 	done	
 	#合并完整配置文件
-	cut -c 1- $TMPDIR/set.yaml $yaml_dns $yaml_hosts $yaml_user $yaml_others $yaml_add > $TMPDIR/config.yaml
+	#使用自定义的dns配置
+	cut -c 1- $TMPDIR/set.yaml $yaml_hosts $yaml_user $yaml_others $yaml_add > $TMPDIR/config.yaml
 	#测试自定义配置文件
 	$bindir/clash -t -d $bindir -f $TMPDIR/config.yaml >/dev/null
 	if [ "$?" != 0 ];then
@@ -754,7 +757,10 @@ start_tun(){
 			sleep 1
 			i=$((i+1))
 		done
-		ip route add default dev utun table 100
+		#ip route add default dev utun table 100
+		#自定义的配置
+		ip route add default dev utun from 192.168.19.0/24 metric 20 table 100
+		ip route add default via 192.168.31.97 dev br-lan from 192.168.31.0/24 metric 40 table 100
 		ip rule add fwmark $fwmark table 100
 		#获取局域网host地址
 		getlanip
