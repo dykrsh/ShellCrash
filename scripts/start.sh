@@ -452,7 +452,7 @@ EOF
 			[ -n "$(grep -E "^$char" $yaml_user)" ] && sed -i "/^$char/d" $TMPDIR/set.yaml
 		done
 	}
-	[ -s $TMPDIR/dns.yaml ] && yaml_dns=$TMPDIR/dns.yaml
+	#[ -s $TMPDIR/dns.yaml ] && yaml_dns=$TMPDIR/dns.yaml
 	[ -s $TMPDIR/hosts.yaml ] && yaml_hosts=$TMPDIR/hosts.yaml
 	[ -s $clashdir/yamls/others.yaml ] && yaml_others=$clashdir/yamls/others.yaml
 	yaml_add=
@@ -599,6 +599,7 @@ start_ipt_dns(){
 		iptables -t nat -A clash_dns -p udp -j REDIRECT --to $dns_port
 	fi
 	iptables -t nat -I PREROUTING -p udp --dport 53 -j clash_dns
+	iptables -t nat -I clash_dns -i eth4 -p udp --dport 53 -j RETURN
 	#ipv6DNS
 	if [ -n "$(lsmod | grep 'ip6table_nat')" -a -n "$(lsmod | grep 'xt_nat')" ];then
 		ip6tables -t nat -N clashv6_dns > /dev/null 2>&1
